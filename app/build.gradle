@@ -1,0 +1,93 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 25
+    buildToolsVersion "24.0.3"
+
+    defaultConfig {
+        applicationId "com.udacity.gradle.builditbigger"
+        minSdkVersion 16
+        targetSdkVersion 25
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    productFlavors {
+        paid {
+            applicationId "com.udacity.gradle.builditbigger.paid"
+        }
+        free {
+            applicationId "com.udacity.gradle.builditbigger.free"
+        }
+    }
+
+    sourceSets {
+        main { java.srcDirs = ['src/main/java', 'src/test/java/com.udacity.gradle.builditbigger'] }
+        free {
+            java.srcDirs = ['src/free/java', 'src/free/java/']
+            resources.srcDirs = ['src/free/resources', 'src/free/res']
+
+
+            manifest.srcFile
+            'src/free/AndroidManifest.xml'
+        }
+        paid {
+            java.srcDirs = ['src/paid/java', 'src/paid/java/']
+            resources.srcDirs = ['src/paid/resources', 'src/paid/res']
+
+
+            manifest.srcFile
+            'src/paid/AndroidManifest.xml'
+        }
+    }
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
+        exclude group: 'com.android.support', module: 'support-annotations'
+    })
+
+    compile project(':mylibrary')
+    compile project(path: ':backend', configuration: 'android-endpoints')
+    compile 'com.android.support:appcompat-v7:25.1.0'
+    freeCompile 'com.google.android.gms:play-services-ads:10.0.1'
+    compile 'com.google.code.findbugs:jsr305:2.0.1'
+    // Required -- JUnit 4 framework
+    testCompile 'junit:junit:4.12'
+    // Optional -- Mockito framework
+    testCompile 'org.mockito:mockito-core:1.10.19'
+}
+
+task startAppEngine (dependsOn: [":backend:appengineRun"]) {
+    project(":backend").afterEvaluate { backend ->
+        backend.extensions.appengine.daemon = true
+    }
+    doLast {
+        println "Server Started!"
+    }
+}
+
+task stopAppEngin{
+    dependsOn ':backend:appengineStop'
+
+    doLast{
+        println "Server Stopped!"
+    }
+}
+
+task appTests{
+    dependsOn ':app:test', ':app:connectedAndroidTest'
+}
+
+task runAllTests{
+    dependsOn startAppEngine
+    finalizedBy appTests, stopAppEngin
+}
